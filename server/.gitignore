@@ -1,0 +1,12 @@
+node_modules
+dist
+*.tsbuildinfo
+*.log
+.env
+
+uploads/videos/*
+!uploads/videos/.gitkeep
+uploads/frames/*
+!uploads/frames/.gitkeep
+results/*
+!results/.gitkeep
