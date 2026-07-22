@@ -18,7 +18,7 @@ export async function uploadVideo(file: File, siteName: string): Promise<UploadR
   formData.append("video", file);
   formData.append("siteName", siteName);
 
-  const res = await fetch("/api/audit/upload", {
+  const res = await fetch("https://your-render-app.onrender.com/api/audit/upload", {
     method: "POST",
     body: formData,
   });
@@ -31,7 +31,7 @@ export async function uploadPhotos(files: File[], siteName: string): Promise<Upl
   for (const file of files) formData.append("photos", file);
   formData.append("siteName", siteName);
 
-  const res = await fetch("/api/audit/upload-photos", {
+  const res = await fetch("https://your-render-app.onrender.com/api/audit/upload-photos", {
     method: "POST",
     body: formData,
   });
@@ -40,24 +40,24 @@ export async function uploadPhotos(files: File[], siteName: string): Promise<Upl
 }
 
 export async function getAuditStatus(auditId: string): Promise<StatusResponse> {
-  const res = await fetch(`/api/audit/${auditId}/status`);
+  const res = await fetch(`https://your-render-app.onrender.com/api/audit/${auditId}/status`);
   return parseJsonOrThrow<StatusResponse>(res);
 }
 
 export async function getAuditResult(auditId: string): Promise<AuditRecord> {
-  const res = await fetch(`/api/audit/${auditId}`);
+  const res = await fetch(`https://your-render-app.onrender.com/api/audit/${auditId}`);
   return parseJsonOrThrow<AuditRecord>(res);
 }
 
 export function getAuditVideoUrl(auditId: string): string {
-  return `/api/audit/${auditId}/video`;
+  return `https://your-render-app.onrender.com/api/audit/${auditId}/video`;
 }
 
 export function getAuditPhotoUrl(auditId: string, index: number): string {
-  return `/api/audit/${auditId}/photo/${index}`;
+  return `https://your-render-app.onrender.com/api/audit/${auditId}/photo/${index}`;
 }
 
 export async function listAudits(): Promise<AuditListItem[]> {
-  const res = await fetch("/api/audit");
+  const res = await fetch("https://your-render-app.onrender.com/api/audit");
   return parseJsonOrThrow<AuditListItem[]>(res);
 }
