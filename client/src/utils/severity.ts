@@ -15,3 +15,12 @@ export const ANSWER_STYLES: Record<string, string> = {
   "Unable to determine":
     "bg-gray-100 text-gray-700 border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700",
 };
+
+/**
+ * Whether a questionnaire answer represents a safety concern. Independent of
+ * raw Yes/No polarity — some official questions are phrased inversely, so the
+ * explicit `concern` flag (when present) always wins over the answer text.
+ */
+export function isConcern(answer: string, concern: boolean | undefined): boolean {
+  return concern ?? answer === "No";
+}

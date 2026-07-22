@@ -19,5 +19,5 @@ app.get("/api/welcome", (req: Request, res: Response) => {
 app.use("/api/audit", auditRoutes);
 
 app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });

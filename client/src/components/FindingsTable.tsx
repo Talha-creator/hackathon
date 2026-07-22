@@ -112,7 +112,6 @@ export function FindingsTable({
               <tr>
                 <th className="px-4 py-3">#</th>
                 <th className="px-4 py-3">Section</th>
-                <th className="px-4 py-3">Q#</th>
                 <th className="px-4 py-3">Timestamp / Location</th>
                 <th className="px-4 py-3">Observation</th>
                 <th className="px-4 py-3">Severity</th>
@@ -133,9 +132,6 @@ export function FindingsTable({
                     {finding.findingNumber}
                   </td>
                   <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{finding.section}</td>
-                  <td className="px-4 py-3 font-mono text-xs text-gray-500 dark:text-gray-400">
-                    {finding.questionRefs.length > 0 ? finding.questionRefs.join(", ") : "—"}
-                  </td>
                   <td className="px-4 py-3">
                     <span className="font-mono text-indigo-600 dark:text-indigo-400">
                       {finding.timestamp}

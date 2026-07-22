@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   AlertOctagon,
   ClipboardCheck,
@@ -13,12 +13,21 @@ import { getAuditResult, getAuditVideoUrl, listAudits } from "../services/api";
 import type { AuditListItem, AuditRecord, FindingSeverity } from "../types/audit.types";
 import { StatTile } from "../components/StatTile";
 import { SeverityDoughnutChart } from "../components/SeverityDoughnutChart";
-import { SectionComplianceMeters, type SectionStat } from "../components/SectionComplianceMeters";
+import { SectionComplianceMeters } from "../components/SectionComplianceMeters";
 import { FindingsTable } from "../components/FindingsTable";
 import { SummaryReport } from "../components/SummaryReport";
+import { ComplianceReportCard } from "../components/ComplianceReportCard";
 import { VideoPlayerSync } from "../components/VideoPlayerSync";
 import { PhotoGallery } from "../components/PhotoGallery";
 import { timestampToSeconds } from "../utils/timestamp";
+import { isConcern } from "../utils/severity";
+import { buildComplianceReport } from "../utils/complianceReport";
+
+interface SectionStat {
+  section: string;
+  total: number;
+  concerns: number;
+}
 
 const EMPTY_SEVERITY_COUNTS: Record<FindingSeverity, number> = {
   Critical: 0,
@@ -35,11 +44,9 @@ const TABS = [
 
 type TabId = (typeof TABS)[number]["id"];
 
-function isConcern(answer: string, concern: boolean | undefined): boolean {
-  return concern ?? answer === "No";
-}
-
 function SiteAudits() {
+  const [searchParams] = useSearchParams();
+  const initialAuditIdRef = useRef(searchParams.get("auditId"));
   const [audits, setAudits] = useState<AuditListItem[] | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [record, setRecord] = useState<AuditRecord | null>(null);
@@ -47,8 +54,10 @@ function SiteAudits() {
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<TabId>("summary");
   const videoRef = useRef<HTMLVideoElement>(null);
+  const evidenceRef = useRef<HTMLDivElement>(null);
 
   function handleEvidenceClick(evidence: string) {
+    evidenceRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     if (record?.sourceType === "photo") {
       const match = /photo\s*(\d+)/i.exec(evidence);
       if (match) setSelectedPhotoIndex(Number(match[1]) - 1);
@@ -64,7 +73,10 @@ function SiteAudits() {
     listAudits()
       .then((items) => {
         setAudits(items);
-        if (items.length > 0) setSelectedId(items[0].auditId);
+        const initialAuditId = initialAuditIdRef.current;
+        const requested = initialAuditId && items.some((item) => item.auditId === initialAuditId);
+        if (requested) setSelectedId(initialAuditId);
+        else if (items.length > 0) setSelectedId(items[0].auditId);
       })
       .catch((err) => setLoadError(err instanceof Error ? err.message : String(err)));
   }, []);
@@ -107,6 +119,8 @@ function SiteAudits() {
     totalQuestions > 0 ? Math.round(((totalQuestions - totalConcerns) / totalQuestions) * 100) : 0;
   const urgentCount = severityCounts.Critical + severityCounts.High;
   const sectionsFlagged = sectionStats.filter((s) => s.concerns > 0).length;
+
+  const complianceReport = useMemo(() => (result ? buildComplianceReport(result) : null), [result]);
 
   if (loadError) {
     return (
@@ -199,12 +213,16 @@ function SiteAudits() {
           </div>
 
           {activeTab === "summary" && (
-            <div>
-              <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-gray-900 dark:text-gray-100">
-                <FileText className="h-4 w-4 text-indigo-500" />
-                Executive Summary
-              </h2>
-              <SummaryReport summary={result.summary} />
+            <div className="flex flex-col gap-6">
+              <div>
+                <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-gray-900 dark:text-gray-100">
+                  <FileText className="h-4 w-4 text-indigo-500" />
+                  Executive Summary
+                </h2>
+                <SummaryReport summary={result.summary} />
+              </div>
+
+              {complianceReport && <ComplianceReportCard report={complianceReport} />}
             </div>
           )}
 
@@ -238,7 +256,7 @@ function SiteAudits() {
                   <h2 className="mb-4 text-sm font-semibold text-gray-900 dark:text-gray-100">
                     Compliance by section
                   </h2>
-                  <SectionComplianceMeters stats={sectionStats} />
+                  <SectionComplianceMeters questions={result.questions} />
                 </div>
               </div>
             </div>
@@ -246,16 +264,18 @@ function SiteAudits() {
 
           {activeTab === "findings" && (
             <div className="flex flex-col gap-6">
-              {record?.sourceType === "photo" ? (
-                <PhotoGallery
-                  auditId={result.auditId}
-                  count={result.photoPaths?.length ?? 0}
-                  selectedIndex={selectedPhotoIndex}
-                  onSelect={setSelectedPhotoIndex}
-                />
-              ) : (
-                <VideoPlayerSync ref={videoRef} src={getAuditVideoUrl(result.auditId)} />
-              )}
+              <div ref={evidenceRef} className="scroll-mt-6">
+                {record?.sourceType === "photo" ? (
+                  <PhotoGallery
+                    auditId={result.auditId}
+                    count={result.photoPaths?.length ?? 0}
+                    selectedIndex={selectedPhotoIndex}
+                    onSelect={setSelectedPhotoIndex}
+                  />
+                ) : (
+                  <VideoPlayerSync ref={videoRef} src={getAuditVideoUrl(result.auditId)} />
+                )}
+              </div>
 
               <div>
                 <h2 className="mb-3 text-sm font-semibold text-gray-900 dark:text-gray-100">

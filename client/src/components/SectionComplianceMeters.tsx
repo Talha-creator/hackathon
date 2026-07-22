@@ -1,44 +1,69 @@
-export interface SectionStat {
-  section: string;
-  total: number;
-  concerns: number;
-}
+import { useState } from "react";
+import { AlertTriangle, CheckCircle2, ChevronDown } from "lucide-react";
+import type { AuditQuestion } from "../types/audit.types";
+import { isConcern } from "../utils/severity";
 
 interface SectionComplianceMetersProps {
-  stats: SectionStat[];
+  questions: AuditQuestion[];
 }
 
-function meterColor(ratio: number): string {
-  if (ratio === 0) return "#0ca30c";
-  if (ratio < 0.34) return "#fab219";
-  if (ratio < 0.67) return "#ec835a";
-  return "#d03b3b";
-}
+export function SectionComplianceMeters({ questions }: SectionComplianceMetersProps) {
+  const [expandedSection, setExpandedSection] = useState<string | null>(null);
 
-export function SectionComplianceMeters({ stats }: SectionComplianceMetersProps) {
+  const bySection = new Map<string, AuditQuestion[]>();
+  for (const question of questions) {
+    const list = bySection.get(question.section) ?? [];
+    list.push(question);
+    bySection.set(question.section, list);
+  }
+
   return (
-    <div className="flex flex-col gap-4">
-      {stats.map(({ section, total, concerns }) => {
-        const compliant = total - concerns;
-        const ratio = total > 0 ? concerns / total : 0;
-        const compliantPct = total > 0 ? (compliant / total) * 100 : 100;
+    <div className="flex flex-col">
+      {Array.from(bySection.entries()).map(([section, sectionQuestions]) => {
+        const concerns = sectionQuestions.filter((q) => isConcern(q.answer, q.concern));
+        const hasConcerns = concerns.length > 0;
+        const isOpen = expandedSection === section;
 
         return (
-          <div key={section}>
-            <div className="mb-1.5 flex items-center justify-between gap-2">
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+          <div key={section} className="border-b border-gray-100 py-3 last:border-0 dark:border-white/5">
+            <button
+              type="button"
+              onClick={() => hasConcerns && setExpandedSection(isOpen ? null : section)}
+              className={`flex w-full items-center justify-between gap-2 text-left ${
+                hasConcerns ? "" : "cursor-default"
+              }`}
+            >
+              <span className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                {hasConcerns ? (
+                  <AlertTriangle className="h-4 w-4 shrink-0 text-red-500" />
+                ) : (
+                  <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
+                )}
                 {section}
               </span>
-              <span className="shrink-0 text-xs tabular-nums text-gray-500 dark:text-gray-400">
-                {compliant}/{total} compliant
-              </span>
-            </div>
-            <div className="h-2.5 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-white/5">
-              <div
-                className="h-full rounded-full transition-all duration-500"
-                style={{ width: `${compliantPct}%`, backgroundColor: meterColor(ratio) }}
-              />
-            </div>
+              {hasConcerns && (
+                <ChevronDown
+                  className={`h-3.5 w-3.5 shrink-0 text-gray-400 transition-transform ${
+                    isOpen ? "rotate-180" : ""
+                  }`}
+                />
+              )}
+            </button>
+
+            {isOpen && hasConcerns && (
+              <div className="mt-3 flex flex-col gap-3 border-l-2 border-red-100 pl-4 dark:border-red-900/40">
+                {concerns.map((q) => (
+                  <div key={q.id} className="flex flex-col gap-1">
+                    <p className="text-xs text-gray-700 dark:text-gray-300">{q.question}</p>
+                    {q.reason && (
+                      <p className="text-[11px] leading-relaxed text-gray-500 dark:text-gray-400">
+                        Why this was flagged: {q.reason}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         );
       })}
