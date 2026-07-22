@@ -10,11 +10,7 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 app.use(cors({
-  origin: [
-    "http://localhost:5173",
-    "https://hackathon-a8ov1osbi-talhanazircielocosta.vercel.app"
-  ],
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  origin: true,
   credentials: true
 }));
 app.use(express.json());
